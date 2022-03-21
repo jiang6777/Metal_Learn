@@ -25,5 +25,9 @@ The specific usage of tmalview is as follows:
          [self.view addSubview:self.metalView];
 
      }
+## Achievement display
+![Metal icon](https://github.com/jiang6777/Metal_Learn/blob/main/metal.png)
+
+
 ## End
 If you find any problems during use, please send me an email message jiang677@yeah.net, it is not easy to create, if you think it can help you, I hope you can appreciate it, thank you
