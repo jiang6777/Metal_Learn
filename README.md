@@ -27,6 +27,7 @@ The specific usage of tmalview is as follows:
      }
 ## Achievement display
 ![Metal icon](https://github.com/jiang6777/Metal_Learn/blob/main/metal.png)
+![Metal video](https://github.com/jiang6777/Metal_Learn/blob/main/metal1.mp4)
 
 
 ## End
