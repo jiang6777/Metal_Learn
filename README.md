@@ -1,5 +1,5 @@
 # Metal_Learn
-This project realizes the rendering of real-time video stream through Metal, and the rendered video stream supports NV12, NV21, RGB, BGR and other video formats.
+This project realizes the rendering of real-time video stream through Metal, and the rendered video stream supports NV12, NV21, RGB, BGR and other video formats，Although the Metal rendering of this project only shows the rendering of the camera on the Mac platform, the iOS platform is also supported.
 
 ## Introduce
 By learning the source code of WebRTC and sorting out the process of Metal rendering in WebRTC, I have improved Metal and encapsulated Metal rendering as CVTMetalView, which is easy to use.
@@ -10,19 +10,20 @@ In order to be compatible with many video frame formats, in CVTI420Buffer, I wil
 ## Usage
 The specific usage of tmalview is as follows:
 
-###
-if ([CVTMetalView isMetalAvailable]) {
+    if ([CVTMetalView isMetalAvailable]) {
 
-  CGFloat height = self. view. frame. size. width * 9 / 16.0;
+         CGFloat height = self. view. frame. size. width * 9 / 16.0;
 
-  self. metalView = [[CVTMetalView alloc] initWithFrame:NSMakeRect(0, 0, self.view.frame.size.width, height)];
+         self. metalView = [[CVTMetalView alloc] initWithFrame:NSMakeRect(0, 0, self.view.frame.size.width, height)];
 
-  self. metalView. delegate = self;
+         self. metalView. delegate = self;
 
-  self. metalView. wantsLayer = YES;
+         self. metalView. wantsLayer = YES;
 
-  self. metalView. layer. backgroundColor = [NSColor blackColor]. CGColor;
+         self. metalView. layer. backgroundColor = [NSColor blackColor]. CGColor;
 
-  [self.view addSubview:self.metalView];
+         [self.view addSubview:self.metalView];
 
-}
+     }
+## End
+If you find any problems during use, please send me an email message jiang677@yeah.net, it is not easy to create, if you think it can help you, I hope you can appreciate it, thank you
