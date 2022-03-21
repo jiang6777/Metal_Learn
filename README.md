@@ -24,9 +24,9 @@ The specific usage of tmalview is as follows:
      }
 ## Achievement display
 ![Metal icon](https://github.com/jiang6777/Metal_Learn/blob/main/metal.png)
-![Metal video](https://github.com/jiang6777/Metal_Learn/blob/main/metal1.mp4)
 
 
 ## End
 If you find any problems during use, please send me an email message jiang677@yeah.net, it is not easy to create, if you think it can help you, I hope you can appreciate it, thank you
+
 ![My QR code](https://github.com/jiang6777/Metal_Learn/blob/main/thanks.png)
