@@ -11,10 +11,11 @@
 #include "libyuv/planar_functions.h"
 #include "libyuv/scale.h"
 
+static int const align_pixel = 16;
+
 @implementation CVTI420Buffer
 {
     CVTVideoRotation _rotation;
-    NSString *_filePath;
 }
 
 - (instancetype)initWithPixelBuffer:(CVPixelBufferRef)pixelBuffer
@@ -24,7 +25,6 @@
         _pixelBufferRef = pixelBuffer;
         CVPixelBufferRetain(pixelBuffer);
         _rotation = rotation;
-        _filePath = [NSHomeDirectory() stringByAppendingFormat:@"/Documents/i420.png"];
     }
     return self;
 }
@@ -62,9 +62,6 @@
     const OSType pixelFormat = CVPixelBufferGetPixelFormatType(_pixelBufferRef);
     
     CVPixelBufferLockBaseAddress(_pixelBufferRef, kCVPixelBufferLock_ReadOnly);
-    int src_stride_y = (int)CVPixelBufferGetBytesPerRowOfPlane(_pixelBufferRef, 1);
-    int src_stride_uv = (int)CVPixelBufferGetBytesPerRowOfPlane(_pixelBufferRef, 1);
-    int sourceHeight = (int)CVPixelBufferGetHeight(_pixelBufferRef);
     
     int width = (int)CVPixelBufferGetWidth(_pixelBufferRef);
     int height = (int)CVPixelBufferGetHeight(_pixelBufferRef);
@@ -72,32 +69,26 @@
     self.height = height;
     
     //Note: Due to the size rules of the YUV data, the width may be inconsistent with the size of the y plane and the uv plane, so you need to use src_stride_y to calculate the memory size of _dataY, _dataU, and _dataV, otherwise there will be problems.
-    int strideY_ = src_stride_y;
-    int strideU_ = (src_stride_uv + 1) / 2;
-    int strideV_ = (src_stride_uv + 1) / 2;
     
-    _strideY = strideY_;
-    _strideU = strideU_;
-    _strideV = strideV_;
-    
-    if (_dataY == NULL) {
-        _dataY = (uint8_t *)malloc(strideY_ * sourceHeight);
-    }
-    memset(_dataY, 0, strideY_ * sourceHeight);
-    if (_dataU == NULL) {
-        _dataU = (uint8_t *)malloc(strideU_ * (sourceHeight + 1) / 2);
-    }
-    memset(_dataU, 0, strideU_ * (sourceHeight + 1) / 2);
-    if (_dataV == NULL) {
-        _dataV = (uint8_t *)malloc(strideV_ * (sourceHeight + 1) / 2);
-    }
-    memset(_dataV, 0, strideV_ * (sourceHeight + 1) / 2);
     
     switch (pixelFormat) {
         case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
         case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange: {
             uint8_t *yBuffer = (uint8_t *)CVPixelBufferGetBaseAddressOfPlane(_pixelBufferRef, 0);
             uint8_t *cbCrBuffer = (uint8_t *)CVPixelBufferGetBaseAddressOfPlane(_pixelBufferRef, 1);
+            int src_stride_y = (int)CVPixelBufferGetBytesPerRowOfPlane(_pixelBufferRef, 0);
+            int src_stride_uv = (int)CVPixelBufferGetBytesPerRowOfPlane(_pixelBufferRef, 1);
+            int sourceHeight = (int)CVPixelBufferGetHeight(_pixelBufferRef);
+            int strideY_ = src_stride_y;
+            int strideU_ = (src_stride_uv + 1) / 2;
+            int strideV_ = (src_stride_uv + 1) / 2;
+            
+            _strideY = strideY_;
+            _strideU = strideU_;
+            _strideV = strideV_;
+            
+            [self createBufferWithStrideY:src_stride_y strideUV:src_stride_uv sourceHeight:sourceHeight];
+            
             ret = NV12ToI420(yBuffer,
                              strideY_,
                              cbCrBuffer,
@@ -112,9 +103,22 @@
             break;
         }
         case kCVPixelFormatType_32BGRA:
-        case kCVPixelFormatType_32ARGB: {
+        case kCVPixelFormatType_32ARGB:
+        case kCVPixelFormatType_24RGB: {
             uint8_t *src = (uint8_t *)CVPixelBufferGetBaseAddress(_pixelBufferRef);
             int bytesPerRow = (int)CVPixelBufferGetBytesPerRow(_pixelBufferRef);
+            int sourceWidth = (int)CVPixelBufferGetWidth(_pixelBufferRef);
+            int sourceHeight = (int)CVPixelBufferGetHeight(_pixelBufferRef);
+            
+            int strideY_ = ceil(sourceWidth / (1.0 * align_pixel)) * align_pixel;
+            int strideU_ = (strideY_ + 1) / 2;
+            int strideV_ = (strideY_ + 1) / 2;
+            
+            _strideY = strideY_;
+            _strideU = strideU_;
+            _strideV = strideV_;
+            
+            [self createBufferWithStrideY:strideY_ strideUV:strideY_ sourceHeight:sourceHeight];
             if (pixelFormat == kCVPixelFormatType_32BGRA) {
                 // Corresponds to libyuv::FOURCC_ARGB
                 ret = ARGBToI420(src,
@@ -139,6 +143,17 @@
                                  strideV_,
                                  width,
                                  sourceHeight);
+            } else if (pixelFormat == kCVPixelFormatType_24RGB) {
+                ret = RGB24ToI420(src,
+                                  bytesPerRow,
+                                  _dataY,
+                                  strideY_,
+                                  _dataU,
+                                  strideU_,
+                                  _dataV,
+                                  strideV_,
+                                  width,
+                                  height);
             }
             break;
         }
@@ -149,13 +164,30 @@
     return ret;
 }
 
+- (void)createBufferWithStrideY:(int)src_stride_y
+                       strideUV:(int)src_stride_uv
+                   sourceHeight:(int)sourceHeight {
+    
+    if (_dataY == NULL) {
+        _dataY = (uint8_t *)malloc(_strideY * sourceHeight);
+    }
+    memset(_dataY, 0, _strideY * sourceHeight);
+    if (_dataU == NULL) {
+        _dataU = (uint8_t *)malloc(_strideU * (sourceHeight + 1) / 2);
+    }
+    memset(_dataU, 0, _strideU * (sourceHeight + 1) / 2);
+    if (_dataV == NULL) {
+        _dataV = (uint8_t *)malloc(_strideV * (sourceHeight + 1) / 2);
+    }
+    memset(_dataV, 0, _strideV * (sourceHeight + 1) / 2);
+}
 
 - (CVTVideoRotation)rotation {
     return _rotation;
 }
 
 - (void)dealloc {
-    NSLog(@"%s", __func__);
+    //    NSLog(@"%s", __func__);
     if (_pixelBufferRef) {
         CVPixelBufferRelease(_pixelBufferRef);
         _pixelBufferRef = nil;
